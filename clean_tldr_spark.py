@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 import mistune
 import re
 from nltk.corpus import stopwords
+from data.tldr.clean_tldr_helpers import clean_text, check_english
 
 spark = SparkSession.builder.appName("webis-tldr-17-corpus-normalization").getOrCreate()
 sc = spark.sparkContext
@@ -32,34 +33,6 @@ comments_df = spark.read.json(input_comments)
 submissions_df = spark.read.json(input_submissions)
 print("Initial number of comments: {}".format(comments_df.count()))
 print("Initial number of submissions: {}".format(submissions_df.count()))
-
-# To avoid recursion depth errors when using Mistune library for removing markdown
-sys.setrecursionlimit(300000)
-global markdownParser
-markdownParser = mistune.Markdown()
-global stop
-stop = set(stopwords.words("english"))
-stop.update(['I', 'you', 'he', 'she', 'it', 'we', 'they', 'me','my' 'him', 'her', 'us', 'them'])
-
-def clean_text(input):
-    input = re.sub(r'http\S+','',str(input))
-    input = re.sub(r'https?:\/\/.*[\r\n]*', '', input, flags=re.MULTILINE)
-    input = re.sub(r'&amp;', '', input)
-    input = re.sub(r'[_"\;%()|+&=*%:#$@\[\]/]', '', input)
-    input = re.sub('\.\.+', '.', input)
-    input = re.sub('\!\!+', '!', input)
-    input = re.sub('\?\?+', '?', input)
-    input = re.sub('\-\-+', '-', input)
-    parsed_text = ' '.join(BeautifulSoup(markdownParser(input),"lxml").findAll(text=True)).strip()
-    clean_text = unicodedata.normalize("NFKD", parsed_text)
-    return clean_text
-
-def check_english(input):
-    words = input.lower().split()[0:10]
-    if stop.intersection(words):
-        return input
-    else:
-        return None
 
 cleanText = udf(clean_text, StringType())
 checkEnglish = udf(check_english, StringType())

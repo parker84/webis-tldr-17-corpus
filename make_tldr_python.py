@@ -6,7 +6,12 @@ VALID_TLDRS = ["tl dr", "tl;dr", "tldr", "tl:dr", "tl/dr", "tl; dr", "tl,dr", "t
 
 
 def get_tldr_and_clean_text(subm):
-    cleaned_dict = clean_tldr_text(subm.selftext)
+    if "body" in subm.d_: # => comment
+        text = subm.body
+    else:
+        text = subm.title + "\n\n" + subm.selftext
+    
+    cleaned_dict = clean_tldr_text(text)
     cleaned_text = cleaned_dict["clean_text_for_tldr"]
     all_tldrs = get_all_tldr(cleaned_text)
     content_and_summary = iter_tldr(cleaned_text)
@@ -22,8 +27,8 @@ def get_tldr_and_clean_text(subm):
         "num_tldrs": len(all_tldrs),
         "tldr_content": content,
         "tldr_summary": summary,
-        "is_invalid_tldr_pattern":  all([tldr in VALID_TLDRS
-                                         for tldr in all_tldrs])
+        "is_valid_tldr_pattern":  all([tldr.lower() in VALID_TLDRS
+                                       for tldr in all_tldrs])
     }
     tldr_dict.update(cleaned_dict)
     return tldr_dict

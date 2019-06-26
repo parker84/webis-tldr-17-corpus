@@ -1,7 +1,7 @@
 import itertools
 import csv
 import re
-from settings import BOT_LIST_PATH
+from settings import BOT_LIST_PATH, FILTER_TLDRS_WHEN_PULLING
 
 global botlist
 with open(BOT_LIST_PATH,'r') as bot_file:
@@ -25,22 +25,27 @@ def get_all_tldr(input):
     return pattern.findall(lower)
 
 # Find location of the tldr pattern and split text to form <content, summary> pairs
-def iter_tldr(text):
+def iter_tldr(text, filter_tldrs=FILTER_TLDRS_WHEN_PULLING):
     lower_text = str(text).lower()
     patterns = re.findall(r'tl.{0,3}dr',lower_text)
     if len(patterns) > 0:
         match = patterns[-1]
         if match:
             index = lower_text.rfind(match)
-            if index == 0 or index+len(match) == len(str(lower_text)):
-                return None
+            if filter_tldrs:
+                if index == 0 or index+len(match) == len(str(lower_text)):
+                    return None
+                else:
+                    content = text[:index].strip()
+                    summary = text[index+len(match):].strip()
+                    if len(content.split()) > len(summary.split()):
+                        return [content,summary]
+                    else:
+                        return None
             else:
                 content = text[:index].strip()
                 summary = text[index+len(match):].strip()
-                if len(content.split()) > len(summary.split()):
-                    return [content,summary]
-                else:
-                    return None
+                return [content,summary]
         else:
             return None
     else:

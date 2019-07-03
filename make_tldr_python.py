@@ -8,8 +8,10 @@ VALID_TLDRS = ["tl dr", "tl;dr", "tldr", "tl:dr", "tl/dr", "tl; dr", "tl,dr", "t
 def get_tldr_and_clean_text(subm):
     if "body" in subm.d_: # => comment
         text = subm.body
-    else:
+    elif "selftext" in subm.d_:
         text = subm.title + "\n\n" + subm.selftext
+    else:
+        text = subm.title
     
     cleaned_dict = clean_tldr_text(text)
     cleaned_text = cleaned_dict["clean_text_for_tldr"]
@@ -20,9 +22,14 @@ def get_tldr_and_clean_text(subm):
         summary = content_and_summary[1]
     else:
         content = summary = None
+    if "author" in subm.d_:
+        is_bot =  subm.author in botlist
+    else:
+        is_bot = None
+
     # TODO: check how well this works on shorted TLDR posts (when content in link)
     tldr_dict = {
-        "is_bot": subm.author in botlist,
+        "is_bot": is_bot,
         "tldr_preset": tl_dr(cleaned_text),
         "num_tldrs": len(all_tldrs),
         "tldr_content": content,
